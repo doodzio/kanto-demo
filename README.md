@@ -21,7 +21,14 @@ If you want to run this part on other device, then execute steps from [this tuto
 
 To remote execute operations on Kanto device we will use script `hono_create_with_config.py` that is based on script from [step two in previous section](#prerequisites). To execute commands, we have to know context of a device, namely its **tenant and device id**, you should have these values in `hono_provisioning.sh` script on your device.
 
-Run containers 
+### Create empty directories for Kuksa configuration and logs in your `home` path:
+
+```bash
+mkdir ~/kuksaval.config/
+mkdir ~/container-logs/
+```
+
+### Run containers 
 
 Run Kuksa val
 ```bash
