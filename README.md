@@ -25,17 +25,16 @@ Run containers
 
 Run Kuksa val
 ```bash
-
-sudo kanto-cm create -n kuksa-val --mp "$HOME/kuksaval.config/:/config" --network host --e LOG_LEVEL=ALL --i --t ghcr.io/eclipse/kuksa.val/kuksa-val:master   
+sudo kanto-cm create -n kuksa-val --mp "$HOME/kuksaval.config/:/config" --network host --e LOG_LEVEL=ALL --i --t --log-path "$HOME/container-logs" ghcr.io/eclipse/kuksa.val/kuksa-val:master
 ```
 
 Run kuksa kanto
 ```bash
-sudo kanto-cm create -n kuksa-kanto --network host --i --t registry.hub.docker.com/doodzio/local-kanto-demo:0.1.0
+sudo kanto-cm create -n kuksa-kanto --network host --i --t --log-path "$HOME/container-logs" registry.hub.docker.com/doodzio/local-kanto-demo:0.1.0
 ```
 
 Run gps feeder
 
 ```bash
-sudo kanto-cm create -n kuksa-gps-feeder --network host --mp "$HOME/kuksaval.config/:/config" --i --t registry.hub.docker.com/doodzio/local-kuksa-gps-feeder:0.1.0
+sudo kanto-cm create -n kuksa-gps-feeder --network host --mp "$HOME/kuksaval.config/:/config" --i --t --log-path "$HOME/container-logs" registry.hub.docker.com/doodzio/local-kuksa-gps-feeder:0.1.0
 ```
