@@ -2,24 +2,60 @@
 
 Demo based on [presentation](https://www.youtube.com/watch?v=bMN_ZiUS3Bc).
 
+Table of content:
+
+- [Eclipse kanto demo](#eclipse-kanto-demo)
+  - [Demo description](#demo-description)
+  - [Prerequisites](#prerequisites)
+    - [Setup Eclipse Kanto locally](#setup-eclipse-kanto-locally)
+    - [Prepare containers](#prepare-containers)
+      - [Kuksa.val Server](#kuksaval-server)
+      - [Kuksa-kanto App](#kuksa-kanto-app)
+    - [Kuksa GPS feeder](#kuksa-gps-feeder)
+    - [Create empty directories for Kuksa configuration and logs in your `home` path:](#create-empty-directories-for-kuksa-configuration-and-logs-in-your-home-path)
+    - [Phone](#phone)
+    - [Demo locally](#demo-locally)
+      - [Run containers](#run-containers)
+      - [Check messages](#check-messages)
+
+## Demo description
+
+During demo, we will run kanto on our device (or PC, later called device for simplicity).
+Next, we will start containers that will receive GPS data from our smartphone and send them to public hono sandbox.
+
+**Requirements**
+
+- Phone with GPSd Forwarding APP
+- Device with Kanto and connection to the internet
+
 ## Prerequisites
 
+### Setup Eclipse Kanto locally
+
 1. Install Kanto as described [here](https://websites.eclipseprojects.io/kanto/docs/getting-started/install/)
-2. Download tools and setup hono tenant, execute steps from this [instruction](https://websites.eclipseprojects.io/kanto/docs/getting-started/hono/), *save* used tenant for later.
-3. Prepare link to download **Kuksa.val Server**
-   1. `docker pull ghcr.io/eclipse/kuksa.val/kuksa-val:latest`
-3. Prepare container with application from this [repository](https://github.com/boschglobal/kuksa.val/tree/kanto-kuksa-bridge/kuksa_apps/kanto) and make it available to your device
-   1. You can download it from [registry.hub.docker.com/doodzio/local-kanto-demo:0.1.0](registry.hub.docker.com/doodzio/local-kanto-demo:0.1.0)
-4. Create container of GPS Feeder from this [repository](https://github.com/eclipse/kuksa.val.feeders/tree/main/gps2val) and make it available to your device.
-   1. You can download it from [registry.hub.docker.com/doodzio/local-kuksa-gps-feeder:0.1.0](registry.hub.docker.com/doodzio/local-kuksa-gps-feeder:0.1.0)
+2. Download tools and setup hono tenant, execute steps from this [instruction](https://websites.eclipseprojects.io/kanto/docs/getting-started/hono/), _save_ used configuration for later.
 
-## Demo
+### Prepare containers
 
-We have Kanto running on our device, now we can use same or other PC to create container remotely on device.
+These are links to images used in this demo:
 
-If you want to run this part on other device, then execute steps from [this tutorial](https://websites.eclipseprojects.io/kanto/docs/getting-started/hono/#before-you-begin).
+#### Kuksa.val Server
 
-To remote execute operations on Kanto device we will use script `hono_create_with_config.py` that is based on script from [step two in previous section](#prerequisites). To execute commands, we have to know context of a device, namely its **tenant and device id**, you should have these values in `hono_provisioning.sh` script on your device.
+Publicly available image `ghcr.io/eclipse/kuksa.val/kuksa-val:0.2.1-amd64`
+
+#### Kuksa-kanto App
+
+Custom docker image `registry.hub.docker.com/doodzio/local-kanto-demo:0.2.1`
+
+Image was prepared from sources available [here](https://github.com/boschglobal/kuksa.val/tree/kanto-kuksa-bridge/kuksa_apps/kanto)
+It was important to update some files available in [patch directory](./patch/kuksa-kanto-app/)
+
+### Kuksa GPS feeder
+
+Custom docker image `registry.hub.docker.com/doodzio/local-kuksa-gps-feeder:0.2.1-mk.5`
+
+Image was prepared from sources available [here](https://github.com/eclipse/kuksa.val.feeders/tree/main/gps2val)
+It was important to update some files available in [patch directory](./patch/gps2val/)
 
 ### Create empty directories for Kuksa configuration and logs in your `home` path:
 
@@ -28,20 +64,52 @@ mkdir ~/kuksaval.config/
 mkdir ~/container-logs/
 ```
 
-### Run containers 
+### Phone
+
+Install [GPSd Forwarder](https://play.google.com/store/apps/details?id=io.github.tiagoshibata.gpsdclient) APP on your Android Phone.
+You can also try other GPSd forwarding APP.
+
+Configure `GPSd Forwarder` to send messages to port `29998` on your device.
+
+### Demo locally
+
+#### Run containers
+
+We have to create and start containers, we can do this with `kanto-cm` command
 
 Run Kuksa val
+
 ```bash
-sudo kanto-cm create -n kuksa-val --mp "$HOME/kuksaval.config/:/config" --network host --e LOG_LEVEL=ALL --i --t --log-path "$HOME/container-logs" ghcr.io/eclipse/kuksa.val/kuksa-val:master
+sudo kanto-cm create -n kuksa-val --mp "$HOME/kuksaval.config/:/config" --network host --e LOG_LEVEL=ALL --i --t --log-path "$HOME/container-logs" ghcr.io/eclipse/kuksa.val/kuksa-val:0.2.1-amd64
+sudo kanto-cm start -n kuksa-val
 ```
 
 Run kuksa kanto
+
 ```bash
-sudo kanto-cm create -n kuksa-kanto --network host --i --t --log-path "$HOME/container-logs" registry.hub.docker.com/doodzio/local-kanto-demo:0.1.0
+sudo kanto-cm create -n kuksa-kanto --network host --i --t --log-path "$HOME/container-logs" registry.hub.docker.com/doodzio/local-kanto-demo:0.2.1
+sudo kanto-cm start -n kuksa-kanto
 ```
 
 Run gps feeder
 
 ```bash
-sudo kanto-cm create -n kuksa-gps-feeder --network host --mp "$HOME/kuksaval.config/:/config" --i --t --log-path "$HOME/container-logs" registry.hub.docker.com/doodzio/local-kuksa-gps-feeder:0.1.0
+sudo kanto-cm create -n kuksa-gps-feeder --network host --mp "$HOME/kuksaval.config/:/config" --i --t --log-path "$HOME/container-logs" registry.hub.docker.com/doodzio/local-kuksa-gps-feeder:0.2.1-mk.5
+sudo kanto-cm start -n kuksa-gps-feeder
+```
+
+#### Check messages
+
+We can connect to mqtt locally to check events generated by application, `mosquitto_sub` from `mosquitto-client` package will be sufficient:
+
+```bash
+mosquitto_sub -t 'e/#'
+```
+
+We can also connect to public hono sandbox, that will require `hono-cli`, that can be downloaded from `https://www.eclipse.org/downloads/download.php?file=/hono/hono-cli-2.2.0`
+
+After downloading client, we can use it to subscribe to events, remember to update variables with ones configured previously in [setup-eclipse-kanto-locally](#setup-eclipse-kanto-locally) section.
+
+```bash
+./hono-cli-2.2.0 app --sandbox -u "$AUTH_ID" -p "$PWD" --amqp consume --event -t "$TENANT"
 ```

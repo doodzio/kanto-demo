@@ -1,0 +1,2 @@
+kuksa-viss-client == 0.2.1
+gps
